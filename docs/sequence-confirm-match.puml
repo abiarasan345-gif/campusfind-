@@ -1,0 +1,24 @@
+@startuml
+actor Staff
+participant Frontend
+participant MatchController
+participant MatchingService
+participant LostReportRepository
+participant FoundItemRepository
+participant MySQL
+
+Staff -> Frontend : Confirm Match
+Frontend -> MatchController : POST /api/matches/confirm
+MatchController -> MatchingService : confirmMatch()
+MatchingService -> LostReportRepository : findById(lostId)
+LostReportRepository -> MySQL : SELECT
+MatchingService -> FoundItemRepository : findById(foundId)
+FoundItemRepository -> MySQL : SELECT
+MatchingService -> MatchingService : validate owner/admin + match score
+MatchingService -> FoundItemRepository : save(CLAIMED)
+FoundItemRepository -> MySQL : UPDATE found_items
+MatchingService -> LostReportRepository : save(MATCHED)
+LostReportRepository -> MySQL : UPDATE lost_reports
+MatchingService --> MatchController : MatchResponse
+MatchController --> Frontend : 200 JSON
+@enduml

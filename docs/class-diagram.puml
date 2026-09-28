@@ -1,0 +1,36 @@
+@startuml
+class User {
+  Long id
+  String username
+  String passwordHash
+  UserRole role
+  String fullName
+  String email
+}
+class Category {
+  Long id
+  String name
+}
+class LostReport {
+  Long id
+  String itemName
+  String description
+  String location
+  LocalDate dateLost
+  LostStatus status
+  LocalDateTime createdAt
+}
+class FoundItem {
+  Long id
+  String itemName
+  String description
+  String location
+  LocalDate dateFound
+  FoundStatus status
+  LocalDateTime createdAt
+}
+User "1" -- "0..*" LostReport : reports
+User "1" -- "0..*" FoundItem : reports
+Category "1" -- "0..*" LostReport
+Category "1" -- "0..*" FoundItem
+@enduml

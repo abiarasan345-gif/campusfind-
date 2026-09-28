@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusFind | Lost & Found</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <section id="authView" class="auth-shell">
+    <div class="auth-brand">
+      <div class="logo">CF</div>
+      <span>CampusFind</span>
+    </div>
+    <div class="auth-grid">
+      <div class="hero-card">
+        <p class="eyebrow">CAMPUS LOST & FOUND</p>
+        <h1>Find what matters. Return what matters.</h1>
+        <p>Report lost items, register found items, discover database-backed matches, and track each item's status.</p>
+        <div class="feature-row"><span>✓ MySQL powered</span><span>✓ Spring Boot REST</span><span>✓ Role aware</span></div>
+      </div>
+      <div class="auth-card">
+        <div class="tabs">
+          <button class="tab active" data-auth="login">Login</button>
+          <button class="tab" data-auth="register">Register</button>
+        </div>
+        <form id="loginForm" class="form-stack">
+          <label>Username<input id="loginUsername" required autocomplete="username"></label>
+          <label>Password<input id="loginPassword" required type="password" autocomplete="current-password"></label>
+          <button class="primary" type="submit">Login</button>
+          <p class="hint">Demo: <b>admin / admin123</b> or <b>staff1 / staff123</b></p>
+        </form>
+        <form id="registerForm" class="form-stack hidden">
+          <label>Full name<input id="regFullName" maxlength="150" required></label>
+          <label>Username<input id="regUsername" minlength="3" maxlength="100" required autocomplete="username"></label>
+          <label>Email<input id="regEmail" maxlength="150" type="email"></label>
+          <label>Password<input id="regPassword" minlength="6" maxlength="100" type="password" required autocomplete="new-password"></label>
+          <p class="hint">Public registrations are created as Student accounts.</p>
+          <button class="primary" type="submit">Create Student Account</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <div id="appView" class="app hidden">
+    <aside class="sidebar">
+      <div class="side-brand"><div class="logo">CF</div><div><strong>CampusFind</strong><small>Lost & Found</small></div></div>
+      <nav id="navLinks">
+        <button class="nav-btn active" data-page="dashboard">Dashboard</button>
+        <button class="nav-btn" data-page="lost">Lost Reports</button>
+        <button class="nav-btn" data-page="found">Found Items</button>
+        <button class="nav-btn" data-page="matches">Possible Matches</button>
+        <button class="nav-btn staff-only" data-page="report-found">Report Found Item</button>
+        <button class="nav-btn admin-only" data-page="admin">Admin Dashboard</button>
+        <button class="nav-btn admin-only" data-page="categories">Categories</button>
+      </nav>
+      <div class="profile-box">
+        <div id="userAvatar" class="avatar">U</div>
+        <div><strong id="userName">User</strong><small id="userRole">STUDENT</small></div>
+        <button id="logoutBtn" class="ghost">Logout</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div><p class="eyebrow">CAMPUSFIND</p><h2 id="pageTitle">Dashboard</h2></div>
+        <button id="reportLostTop" class="primary">+ Report Lost Item</button>
+      </header>
+
+      <section id="page-dashboard" class="page active">
+        <div class="welcome-card"><div><p class="eyebrow">WELCOME BACK</p><h3 id="welcomeName">User</h3><p>Use the cards below to move through the lost-and-found workflow.</p></div><span id="welcomeRole" class="pill">STUDENT</span></div>
+        <div class="stats-grid" id="userStats">
+          <div class="stat-card"><span>My Lost Reports</span><strong id="myLostCount">0</strong></div>
+          <div class="stat-card"><span>Open Lost</span><strong id="openLostCount">0</strong></div>
+          <div class="stat-card"><span>Available Found</span><strong id="availableFoundCount">0</strong></div>
+          <div class="stat-card"><span>Possible Matches</span><strong id="matchCount">0</strong></div>
+        </div>
+        <div id="adminMini" class="hidden">
+          <div class="section-head"><div><p class="eyebrow">ADMIN SNAPSHOT</p><h3>System status</h3></div><button class="ghost" data-page-jump="admin">Open Admin Dashboard →</button></div>
+          <div class="stats-grid" id="adminMiniGrid"></div>
+        </div>
+        <div class="two-col">
+          <div class="panel"><div class="section-head"><div><h3>Recent lost reports</h3><p>Latest records from MySQL</p></div></div><div id="dashboardLost" class="item-list"></div></div>
+          <div class="panel"><div class="section-head"><div><h3>Available found items</h3><p>Latest security-desk entries</p></div></div><div id="dashboardFound" class="item-list"></div></div>
+        </div>
+      </section>
+
+      <section id="page-lost" class="page">
+        <div class="section-head"><div><p class="eyebrow">LOST REPORTS</p><h3>Search the database</h3></div><button id="lostRefresh" class="ghost">Refresh</button></div>
+        <div class="filter-bar"><select id="lostCategoryFilter"><option value="">All categories</option></select><input id="lostLocationFilter" placeholder="Location"><input id="lostKeywordFilter" placeholder="Keyword"><select id="lostStatusFilter"><option value="">All statuses</option><option>OPEN</option><option>MATCHED</option><option>RETURNED</option></select><button id="lostFilterBtn" class="primary">Search</button></div>
+        <div class="panel"><div id="lostTableWrap" class="table-wrap"></div></div>
+      </section>
+
+      <section id="page-found" class="page">
+        <div class="section-head"><div><p class="eyebrow">FOUND ITEMS</p><h3>Security desk inventory</h3></div><button id="foundRefresh" class="ghost">Refresh</button></div>
+        <div class="filter-bar"><select id="foundCategoryFilter"><option value="">All categories</option></select><input id="foundLocationFilter" placeholder="Location"><input id="foundKeywordFilter" placeholder="Keyword"><select id="foundStatusFilter"><option value="">All Statuses</option><option value="RETURNED">RETURNED</option><option value="MATCHED">MATCHED</option><option value="UNAVAILABLE">UNAVAILABLE</option></select><button id="foundFilterBtn" class="primary">Search</button></div>
+        <div class="panel"><div id="foundTableWrap" class="table-wrap"></div></div>
+      </section>
+
+      <section id="page-matches" class="page">
+        <div class="section-head"><div><p class="eyebrow">MATCHING ENGINE</p><h3>Possible matches</h3><p>Actual OPEN lost reports matched against AVAILABLE found items.</p></div><button id="matchRefresh" class="ghost">Refresh matches</button></div>
+        <div class="panel"><div id="matchTableWrap" class="table-wrap"></div></div>
+      </section>
+
+      <section id="page-report-found" class="page staff-page">
+        <div class="section-head"><div><p class="eyebrow">STAFF WORKFLOW</p><h3>Report a found item</h3><p>Only Staff/Admin accounts can create found-item records.</p></div></div>
+        <div class="panel form-panel">
+          <form id="foundForm" class="form-grid">
+            <label>Category<select id="foundCategory" required></select></label>
+            <label>Item name<input id="foundItemName" maxlength="150" required></label>
+            <label>Location<input id="foundLocation" maxlength="200" required></label>
+            <label>Date found<input id="foundDate" type="date" required></label>
+            <label>Finder phone<input id="foundPhone" maxlength="30" required placeholder="Phone number"></label>
+            <label class="wide">Description<textarea id="foundDescription" maxlength="1000" rows="4" required></textarea></label>
+            <button class="primary" type="submit">Save Found Item</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="page-report-lost" class="page">
+        <div class="section-head"><div><p class="eyebrow">REPORT</p><h3>Report a lost item</h3></div></div>
+        <div class="panel form-panel">
+          <form id="lostForm" class="form-grid">
+            <label>Category<select id="lostCategory" required></select></label>
+            <label>Item name<input id="lostItemName" maxlength="150" required></label>
+            <label>Location<input id="lostLocation" maxlength="200" required></label>
+            <label>Date lost<input id="lostDate" type="date" required></label>
+            <label class="wide">Description<textarea id="lostDescription" maxlength="1000" rows="4" required></textarea></label>
+            <button class="primary" type="submit">Submit Lost Report</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="page-admin" class="page admin-page">
+        <div class="section-head"><div><p class="eyebrow">ADMIN</p><h3>System dashboard</h3><p>Counts below are read from MySQL.</p></div><button id="adminRefresh" class="ghost">Refresh</button></div>
+        <div class="stats-grid" id="adminGrid"></div>
+      </section>
+
+      <section id="page-categories" class="page admin-page">
+        <div class="section-head"><div><p class="eyebrow">ADMIN</p><h3>Category management</h3></div></div>
+        <div class="two-col"><div class="panel"><form id="categoryForm" class="form-stack"><label>Category name<input id="newCategoryName" maxlength="100" required></label><button class="primary" type="submit">Add Category</button></form></div><div class="panel"><div id="categoryList" class="chip-list"></div></div></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/js/app.js" defer></script>
+</body>
+</html>

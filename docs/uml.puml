@@ -1,0 +1,35 @@
+@startuml
+left to right direction
+actor Student
+actor Staff
+actor Admin
+rectangle CampusFind {
+  usecase "Register / Login" as U1
+  usecase "Report Lost Item" as U2
+  usecase "Register Found Item" as U3
+  usecase "View Lost / Found Items" as U4
+  usecase "Search Possible Matches" as U5
+  usecase "Confirm Match / Claim" as U6
+  usecase "Return Found Item" as U7
+  usecase "View Admin Dashboard" as U8
+  usecase "Manage Categories" as U9
+}
+Student --> U1
+Student --> U2
+Student --> U4
+Student --> U5
+Staff --> U1
+Staff --> U2
+Staff --> U3
+Staff --> U4
+Staff --> U5
+Staff --> U6
+Staff --> U7
+Admin --> U1
+Admin --> U4
+Admin --> U5
+Admin --> U6
+Admin --> U7
+Admin --> U8
+Admin --> U9
+@enduml
