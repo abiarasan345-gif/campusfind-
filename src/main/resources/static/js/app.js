@@ -46,8 +46,8 @@ function fillCategorySelect(id, includeAll = false) {
 }
 
 function showPage(page, updateUrl = true) {
-  if ((page === "admin" || page === "categories") && !canSeeAdmin()) page = "dashboard";
-  if (page === "report-found" && !canSeeStaff()) page = "dashboard";
+  if (page === "admin") page = "dashboard";
+  if (page === "categories" && !canSeeAdmin()) page = "dashboard";
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   const target = $(
     page === "report-lost" ? "page-report-lost" :
@@ -56,7 +56,7 @@ function showPage(page, updateUrl = true) {
   if (!target) return;
   target.classList.add("active");
   document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.page === page));
-  const titleMap = { dashboard: "Dashboard", lost: "Lost Reports", found: "Found Items", matches: "Possible Matches", "report-lost": "Report Lost Item", "report-found": "Report Found Item", admin: "Admin Dashboard", categories: "Categories" };
+  const titleMap = { dashboard: "Dashboard", lost: "Lost Reports", found: "Found Items", matches: "Possible Matches", "report-lost": "Report Lost Item", "report-found": "Report Found Item", categories: "Categories" };
   $("pageTitle").textContent = titleMap[page] || "Dashboard";
   if (updateUrl) history.replaceState({}, "", `#${page}`);
 
@@ -65,7 +65,6 @@ function showPage(page, updateUrl = true) {
     lost: loadLost,
     found: loadFound,
     matches: loadMatches,
-    admin: loadAdmin,
     categories: loadCategories
   };
   if (loaders[page]) loaders[page]().catch(handleError);
@@ -81,7 +80,8 @@ function canSeeAdmin() {
 function applyRoleVisibility() {
   document.querySelectorAll(".staff-only").forEach(el => el.classList.toggle("hidden", !canSeeStaff()));
   document.querySelectorAll(".admin-only").forEach(el => el.classList.toggle("hidden", !canSeeAdmin()));
-  $("adminMini").classList.toggle("hidden", !canSeeAdmin());
+  const adminSec = $("adminSection");
+  if (adminSec) adminSec.classList.toggle("hidden", !canSeeAdmin());
 }
 
 function handleError(error) {
@@ -139,7 +139,10 @@ async function loadDashboard() {
   $("matchCount").textContent = matches.length;
   $("dashboardLost").innerHTML = lost.slice(0, 5).map(item => `<div class="item-card"><strong>${escapeHtml(item.itemName)} <span class="status ${item.status}">${item.status}</span></strong><small>${escapeHtml(item.categoryName)} · ${escapeHtml(item.location)} · ${escapeHtml(item.dateLost)}</small></div>`).join("") || '<div class="empty">No lost reports yet.</div>';
   $("dashboardFound").innerHTML = found.slice(0, 5).map(item => `<div class="item-card"><strong>${escapeHtml(item.itemName)} <span class="status ${item.status}">${item.status}</span></strong><small>${escapeHtml(item.categoryName)} · ${escapeHtml(item.location)} · ${escapeHtml(item.dateFound)}</small></div>`).join("") || '<div class="empty">No available found items.</div>';
-  if (canSeeAdmin()) await loadAdminMini();
+  if (canSeeAdmin()) {
+    const d = await api("/api/admin/dashboard").catch(() => null);
+    if (d) renderAdminGrid("adminGrid", d);
+  }
 }
 
 async function loadLost() {
@@ -152,7 +155,17 @@ async function loadLost() {
   if ($("lostStatusFilter").value) params.set("status", $("lostStatusFilter").value);
   const rows = await api(`/api/lost-reports?${params}`);
   const mineOnly = state.user?.role === "STUDENT" ? rows.filter(x => x.reportingUserId === state.user.userId || x.reportingUserId === state.user.id) : rows;
-  $("lostTableWrap").innerHTML = mineOnly.length ? `<table class="data-table"><thead><tr><th>ID</th><th>Item</th><th>Category</th><th>Location</th><th>Date</th><th>Status</th><th>Case</th><th>Reporter</th></tr></thead><tbody>${mineOnly.map(x => `<tr><td>#${x.id}</td><td><strong>${escapeHtml(x.itemName)}</strong><br><small>${escapeHtml(x.description)}</small></td><td>${escapeHtml(x.categoryName)}</td><td>${escapeHtml(x.location)}</td><td>${escapeHtml(x.dateLost)}</td><td><span class="status ${x.status}">${x.status}</span></td><td>${escapeHtml(x.caseState || "PENDING")}</td><td>${escapeHtml(x.reportingUserName)}</td></tr>`).join("")}</tbody></table>` : '<div class="empty">No lost reports match the filters.</div>';
+  $("lostTableWrap").innerHTML = mineOnly.length ? `<table class="data-table"><thead><tr><th>ID</th><th>Item</th><th>Category</th><th>Location</th><th>Date</th><th>Status</th><th>Case</th><th>Reporter</th><th>Action</th></tr></thead><tbody>${mineOnly.map(x => {
+    const canEdit = canSeeAdmin() || x.reportingUserId === state.user.userId || x.reportingUserId === state.user.id;
+    let actions = "";
+    if (canEdit && x.status === "OPEN") {
+      actions += `<button class="tiny success" data-action="mark-lost-found" data-id="${x.id}" title="Mark this lost item as found">Found</button>`;
+    }
+    if (canEdit) {
+      actions += `<button class="tiny danger" data-action="delete-lost" data-id="${x.id}" title="Delete this report">Delete</button>`;
+    }
+    return `<tr><td>#${x.id}</td><td><strong>${escapeHtml(x.itemName)}</strong><br><small>${escapeHtml(x.description)}</small></td><td>${escapeHtml(x.categoryName)}</td><td>${escapeHtml(x.location)}</td><td>${escapeHtml(x.dateLost)}</td><td><span class="status ${x.status}">${x.status === "RETURNED" ? "FOUND" : x.status}</span></td><td>${escapeHtml(x.caseState || "PENDING")}</td><td>${escapeHtml(x.reportingUserName)}</td><td><div class="action-row">${actions || "—"}</div></td></tr>`;
+  }).join("")}</tbody></table>` : '<div class="empty">No lost reports match the filters.</div>';
 }
 
 async function loadFound() {
@@ -164,14 +177,17 @@ async function loadFound() {
   if ($("foundKeywordFilter").value.trim()) params.set("keyword", $("foundKeywordFilter").value.trim());
   if ($("foundStatusFilter").value) params.set("status", $("foundStatusFilter").value);
   const rows = await api(`/api/found-items?${params}`);
-  const contactHeader = canSeeStaff() ? "<th>Finder phone</th>" : "";
-  $("foundTableWrap").innerHTML = rows.length ? `<table class="data-table"><thead><tr><th>ID</th><th>Item</th><th>Category</th><th>Location</th><th>Date</th>${contactHeader}<th>Status</th><th>Resolution</th><th>Action</th></tr></thead><tbody>${rows.map(x => {
+  $("foundTableWrap").innerHTML = rows.length ? `<table class="data-table"><thead><tr><th>ID</th><th>Item</th><th>Category</th><th>Location</th><th>Date</th><th>Finder phone</th><th>Status</th><th>Resolution</th><th>Action</th></tr></thead><tbody>${rows.map(x => {
     const canEdit = canSeeAdmin() || x.reportingStaffId === state.user.userId || x.reportingStaffId === state.user.id;
     let actions = "";
-    if (canEdit && x.status === "MATCHED") actions += `<button class="tiny" data-action="return" data-id="${x.id}">Return</button>`;
-    const contactCell = canSeeStaff() ? `<td>${escapeHtml(x.finderPhoneNumber || "—")}</td>` : "";
-    return `<tr><td>#${x.id}</td><td><strong>${escapeHtml(x.itemName)}</strong><br><small>${escapeHtml(x.description)}</small></td><td>${escapeHtml(x.categoryName)}</td><td>${escapeHtml(x.location)}</td><td>${escapeHtml(x.dateFound)}</td>${contactCell}<td><span class="status ${x.status}">${x.status}</span></td><td>${escapeHtml(x.caseState || "PENDING")}</td><td><div class="action-row">${actions || "—"}</div></td></tr>`;
-  }).join("")}</tbody></table>` : '<div class="empty">No found items match the filters.</div>';
+    if (canEdit && (x.status === "MATCHED" || x.status === "CLAIMED")) actions += `<button class="tiny" data-action="return" data-id="${x.id}">Return</button>`;
+    if (canEdit && x.status === "AVAILABLE") {
+      actions += `<button class="tiny" data-action="claim" data-id="${x.id}">Mark Claimed</button>`;
+      actions += `<button class="tiny danger" data-action="delete-found" data-id="${x.id}">Delete</button>`;
+    }
+    const phone = x.finderPhoneNumber ? `<a href="tel:${escapeHtml(x.finderPhoneNumber)}" class="phone-link">📞 ${escapeHtml(x.finderPhoneNumber)}</a>` : "—";
+    return `<tr><td>#${x.id}</td><td><strong>${escapeHtml(x.itemName)}</strong><br><small>${escapeHtml(x.description)}</small></td><td>${escapeHtml(x.categoryName)}</td><td>${escapeHtml(x.location)}</td><td>${escapeHtml(x.dateFound)}</td><td>${phone}</td><td><span class="status ${x.status}">${x.status}</span></td><td>${escapeHtml(x.caseState || "PENDING")}</td><td><div class="action-row">${actions || "—"}</div></td></tr>`;
+  }).join("")}</tbody></table>` : `<div class="empty">No found items match the filters.${$("foundKeywordFilter").value.trim() ? `<br><small style="margin-top:6px; display:inline-block; color:var(--muted);">Looking for an item you lost? Check <b><a href="#matches" style="color:var(--primary)">Possible Matches</a></b> or click <b>+ Report Found Item</b> to log it.</small>` : ""}</div>`;
 }
 
 async function loadMatches() {
@@ -188,19 +204,9 @@ async function loadMatches() {
           : `<div class="action-row"><button class="tiny" data-action="resolve-match" data-state="MATCHED" data-lost="${x.lostReportId}">Matched</button><button class="tiny" data-action="resolve-match" data-state="PENDING" data-lost="${x.lostReportId}">Still Pending</button><button class="tiny" data-action="resolve-match" data-state="RETURNED" data-lost="${x.lostReportId}">Mark Returned</button></div>`;
     }
     return `<tr><td>#${x.lostReportId} ${escapeHtml(x.lostItemName)}<br><small>${escapeHtml(x.lostStatus)} / ${escapeHtml(x.caseState)}</small></td><td>#${x.foundItemId} ${escapeHtml(x.foundItemName)}<br><small>${escapeHtml(x.foundStatus)}</small></td><td>${escapeHtml(x.category)}</td><td>${escapeHtml(x.lostDate)}</td><td>${escapeHtml(x.foundDate)}</td><td>${escapeHtml(x.lostLocation)} → ${escapeHtml(x.foundLocation)}</td><td>${escapeHtml(x.foundPhoneNumber || "—")}</td><td><strong>${x.matchScore}%</strong><br><small>${escapeHtml(x.matchReason)}</small></td><td>${action}</td></tr>`;
-  }).join("")}</tbody></table>` : '<div class="empty">No possible matches yet. Create an OPEN lost report and an AVAILABLE found item with the same category.</div>';
+  }).join("")}</tbody></table>` : '<div class="empty">No matches found right now. Matches are generated between <b>OPEN lost reports</b> and <b>AVAILABLE found items</b> in the same category.</div>';
 }
 
-async function loadAdmin() {
-  if (!canSeeAdmin()) return;
-  const d = await api("/api/admin/dashboard");
-  renderAdminGrid("adminGrid", d);
-}
-async function loadAdminMini() {
-  if (!canSeeAdmin()) return;
-  const d = await api("/api/admin/dashboard");
-  renderAdminGrid("adminMiniGrid", d);
-}
 function renderAdminGrid(id, d) {
   const cards = [
     ["Total Users", d.totalUsers], ["Lost Reports", d.totalLostReports], ["Found Items", d.totalFoundItems],
@@ -244,6 +250,20 @@ function bindEvents() {
   $("adminRefresh").addEventListener("click", () => loadAdmin().catch(handleError));
   $("lostFilterBtn").addEventListener("click", () => loadLost().catch(handleError));
   $("foundFilterBtn").addEventListener("click", () => loadFound().catch(handleError));
+
+  ["lostLocationFilter", "lostKeywordFilter"].forEach(id => {
+    $(id)?.addEventListener("keydown", (e) => { if (e.key === "Enter") loadLost().catch(handleError); });
+  });
+  ["lostCategoryFilter", "lostStatusFilter"].forEach(id => {
+    $(id)?.addEventListener("change", () => loadLost().catch(handleError));
+  });
+
+  ["foundLocationFilter", "foundKeywordFilter"].forEach(id => {
+    $(id)?.addEventListener("keydown", (e) => { if (e.key === "Enter") loadFound().catch(handleError); });
+  });
+  ["foundCategoryFilter", "foundStatusFilter"].forEach(id => {
+    $(id)?.addEventListener("change", () => loadFound().catch(handleError));
+  });
 
   $("loginForm").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -302,9 +322,27 @@ function bindEvents() {
     const action = event.target.dataset.action;
     if (!action) return;
     try {
-      if (action === "match" || action === "return") {
-        await api(`/api/found-items/${event.target.dataset.id}/status`, { method: "PATCH", body: JSON.stringify({ status: action === "match" ? "MATCHED" : "RETURNED" }) });
-        toast(action === "match" ? "Item matched" : "Item returned");
+      if (action === "mark-lost-found") {
+        await api(`/api/lost-reports/${event.target.dataset.id}/status`, { method: "PATCH", body: JSON.stringify({ status: "RETURNED" }) });
+        toast("Lost report marked as found!");
+        await Promise.all([loadLost(), loadDashboard(), loadMatches()]);
+      }
+      if (action === "delete-lost") {
+        if (!confirm("Are you sure you want to delete this lost report?")) return;
+        await api(`/api/lost-reports/${event.target.dataset.id}`, { method: "DELETE" });
+        toast("Lost report deleted");
+        await Promise.all([loadLost(), loadDashboard(), loadMatches()]);
+      }
+      if (action === "return" || action === "claim") {
+        const nextStatus = action === "claim" ? "CLAIMED" : "RETURNED";
+        await api(`/api/found-items/${event.target.dataset.id}/status`, { method: "PATCH", body: JSON.stringify({ status: nextStatus }) });
+        toast(nextStatus === "RETURNED" ? "Item marked returned" : "Item marked claimed");
+        await Promise.all([loadFound(), loadDashboard(), loadAdmin()]);
+      }
+      if (action === "delete-found") {
+        if (!confirm("Are you sure you want to delete this found item record?")) return;
+        await api(`/api/found-items/${event.target.dataset.id}`, { method: "DELETE" });
+        toast("Found item deleted");
         await Promise.all([loadFound(), loadDashboard(), loadAdmin()]);
       }
       if (action === "confirm-match") {

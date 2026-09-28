@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.campusfind.dto.LostReportRequest;
 import com.example.campusfind.dto.LostReportResponse;
+import com.example.campusfind.dto.StatusUpdateRequest;
 import com.example.campusfind.service.LostReportService;
 
 import jakarta.servlet.http.HttpSession;
@@ -53,6 +55,11 @@ public class LostReportController {
     @PutMapping("/{id}")
     public LostReportResponse update(@PathVariable Long id, @Valid @RequestBody LostReportRequest request, HttpSession session) {
         return service.update(id, request, session);
+    }
+
+    @PatchMapping("/{id}/status")
+    public LostReportResponse updateStatus(@PathVariable Long id, @Valid @RequestBody StatusUpdateRequest request, HttpSession session) {
+        return service.updateStatus(id, request.status(), session);
     }
 
     @DeleteMapping("/{id}")

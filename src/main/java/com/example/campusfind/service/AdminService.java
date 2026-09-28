@@ -44,7 +44,7 @@ public class AdminService {
                 lostReportRepository.countByStatus(LostStatus.OPEN),
                 foundItemRepository.countByStatus(FoundStatus.AVAILABLE),
                 lostReportRepository.countByStatus(LostStatus.MATCHED),
-                foundItemRepository.countByStatus(FoundStatus.MATCHED),
+                foundItemRepository.countByStatus(FoundStatus.CLAIMED) + foundItemRepository.countByStatus(FoundStatus.MATCHED),
                 foundItemRepository.countByStatus(FoundStatus.RETURNED),
                 lostReportRepository.countByStatus(LostStatus.RETURNED));
     }

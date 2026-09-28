@@ -1,0 +1,242 @@
+{
+  "info": {
+    "name": "CampusFind API",
+    "description": "Postman Collection for CampusFind Lost & Found Item Tracker covering core features, normal flows, and edge cases.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register Student (Normal)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"student1\",\n  \"password\": \"student123\",\n  \"fullName\": \"Sample Student\",\n  \"email\": \"student1@campusfind.local\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] }
+          }
+        },
+        {
+          "name": "Login as Staff",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"staff1\",\n  \"password\": \"staff123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "Login as Admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+          }
+        },
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "auth", "me"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Categories",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/categories", "host": ["{{baseUrl}}"], "path": ["api", "categories"] }
+          }
+        },
+        {
+          "name": "Create Category (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Watches\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/categories", "host": ["{{baseUrl}}"], "path": ["api", "categories"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Lost Reports",
+      "item": [
+        {
+          "name": "Create Lost Report",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": 8,\n  \"itemName\": \"Black Backpack\",\n  \"description\": \"Black laptop bag with ASUS logo\",\n  \"location\": \"Library 2nd Floor\",\n  \"dateLost\": \"2026-09-28\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/lost-reports", "host": ["{{baseUrl}}"], "path": ["api", "lost-reports"] }
+          }
+        },
+        {
+          "name": "List Lost Reports with Filters",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/lost-reports?keyword=bag&status=OPEN",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lost-reports"],
+              "query": [
+                { "key": "keyword", "value": "bag" },
+                { "key": "status", "value": "OPEN" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Lost Report as FOUND (Normal)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"RETURNED\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/lost-reports/1/status", "host": ["{{baseUrl}}"], "path": ["api", "lost-reports", "1", "status"] }
+          }
+        },
+        {
+          "name": "Delete Lost Report",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/lost-reports/1", "host": ["{{baseUrl}}"], "path": ["api", "lost-reports", "1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Found Items",
+      "item": [
+        {
+          "name": "Create Found Item (Staff Only)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": 8,\n  \"itemName\": \"Black Backpack\",\n  \"description\": \"Found black laptop bag with cables\",\n  \"location\": \"Library\",\n  \"dateFound\": \"2026-09-28\",\n  \"finderPhoneNumber\": \"9876543210\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/found-items", "host": ["{{baseUrl}}"], "path": ["api", "found-items"] }
+          }
+        },
+        {
+          "name": "List Found Items",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/found-items", "host": ["{{baseUrl}}"], "path": ["api", "found-items"] }
+          }
+        },
+        {
+          "name": "Mark Found Item as CLAIMED (Normal)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CLAIMED\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/found-items/1/status", "host": ["{{baseUrl}}"], "path": ["api", "found-items", "1", "status"] }
+          }
+        },
+        {
+          "name": "Mark Claimed Item as RETURNED (Normal)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"RETURNED\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/found-items/1/status", "host": ["{{baseUrl}}"], "path": ["api", "found-items", "1", "status"] }
+          }
+        },
+        {
+          "name": "EDGE CASE: AVAILABLE to RETURNED (Must Fail 400)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"RETURNED\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/found-items/1/status", "host": ["{{baseUrl}}"], "path": ["api", "found-items", "1", "status"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Matching Engine",
+      "item": [
+        {
+          "name": "List Possible Matches",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/matches", "host": ["{{baseUrl}}"], "path": ["api", "matches"] }
+          }
+        },
+        {
+          "name": "Confirm Match",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lostReportId\": 1,\n  \"foundItemId\": 1\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/matches/confirm", "host": ["{{baseUrl}}"], "path": ["api", "matches", "confirm"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Admin Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Counts",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/admin/dashboard", "host": ["{{baseUrl}}"], "path": ["api", "admin", "dashboard"] }
+          }
+        }
+      ]
+    }
+  ]
+}

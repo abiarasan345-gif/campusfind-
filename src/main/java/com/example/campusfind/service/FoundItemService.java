@@ -56,7 +56,6 @@ public class FoundItemService {
     @Transactional
     public FoundItemResponse create(FoundItemRequest request, HttpSession session) {
         User user = authService.requireUser(session);
-        requireStaffOrAdmin(user);
 
         FoundItem item = new FoundItem();
         item.setReportingStaff(user);
@@ -105,21 +104,25 @@ public class FoundItemService {
         if (current == FoundStatus.RETURNED || current == FoundStatus.UNAVAILABLE) {
             throw new BadRequestException("A " + current + " item cannot change status again");
         }
+        if (next == FoundStatus.RETURNED && current != FoundStatus.CLAIMED && current != FoundStatus.MATCHED) {
+            throw new BadRequestException("A found item cannot be marked 'returned' unless it is first marked 'claimed'");
+        }
         if (current == FoundStatus.AVAILABLE
+                && next != FoundStatus.CLAIMED
                 && next != FoundStatus.MATCHED
                 && next != FoundStatus.UNAVAILABLE) {
-            throw new BadRequestException("An AVAILABLE item can only move to MATCHED or UNAVAILABLE");
+            throw new BadRequestException("An AVAILABLE item can only move to CLAIMED, MATCHED or UNAVAILABLE");
         }
         if (next == FoundStatus.MATCHED
                 && lostReportRepository.findByMatchedFoundItemId(item.getId()).isEmpty()) {
             throw new BadRequestException("A Found Item can only become MATCHED through Confirm Match");
         }
-        if (current == FoundStatus.MATCHED && next != FoundStatus.RETURNED) {
-            throw new BadRequestException("A MATCHED item can only move to RETURNED");
+        if ((current == FoundStatus.CLAIMED || current == FoundStatus.MATCHED) && next != FoundStatus.RETURNED) {
+            throw new BadRequestException("A " + current + " item can only move to RETURNED");
         }
 
         item.setStatus(next);
-        if (next == FoundStatus.MATCHED) {
+        if (next == FoundStatus.CLAIMED || next == FoundStatus.MATCHED) {
             item.setCaseState(CaseState.MATCHED);
         }
         if (next == FoundStatus.UNAVAILABLE) {
@@ -174,7 +177,7 @@ public class FoundItemService {
         try {
             return FoundStatus.valueOf(value.trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
-            throw new BadRequestException("Invalid found-item status. Use AVAILABLE, MATCHED, UNAVAILABLE or RETURNED");
+            throw new BadRequestException("Invalid found-item status. Use AVAILABLE, CLAIMED, MATCHED, UNAVAILABLE or RETURNED");
         }
     }
 
@@ -187,9 +190,7 @@ public class FoundItemService {
     }
 
     private boolean canViewFinderContact(HttpSession session) {
-        return authService.findCurrentUser(session)
-                .map(user -> user.getRole() == UserRole.STAFF || user.getRole() == UserRole.ADMIN)
-                .orElse(false);
+        return authService.findCurrentUser(session).isPresent();
     }
 
     private FoundItemResponse toResponse(FoundItem item) {

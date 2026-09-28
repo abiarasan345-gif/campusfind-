@@ -53,8 +53,7 @@
         <button class="nav-btn" data-page="lost">Lost Reports</button>
         <button class="nav-btn" data-page="found">Found Items</button>
         <button class="nav-btn" data-page="matches">Possible Matches</button>
-        <button class="nav-btn staff-only" data-page="report-found">Report Found Item</button>
-        <button class="nav-btn admin-only" data-page="admin">Admin Dashboard</button>
+        <button class="nav-btn" data-page="report-found">Report Found Item</button>
         <button class="nav-btn admin-only" data-page="categories">Categories</button>
       </nav>
       <div class="profile-box">
@@ -67,7 +66,10 @@
     <main class="content">
       <header class="topbar">
         <div><p class="eyebrow">CAMPUSFIND</p><h2 id="pageTitle">Dashboard</h2></div>
-        <button id="reportLostTop" class="primary">+ Report Lost Item</button>
+        <div class="action-row">
+          <button id="reportLostTop" class="primary">+ Report Lost Item</button>
+          <button class="ghost" data-page-jump="report-found">+ Report Found Item</button>
+        </div>
       </header>
 
       <section id="page-dashboard" class="page active">
@@ -78,9 +80,16 @@
           <div class="stat-card"><span>Available Found</span><strong id="availableFoundCount">0</strong></div>
           <div class="stat-card"><span>Possible Matches</span><strong id="matchCount">0</strong></div>
         </div>
-        <div id="adminMini" class="hidden">
-          <div class="section-head"><div><p class="eyebrow">ADMIN SNAPSHOT</p><h3>System status</h3></div><button class="ghost" data-page-jump="admin">Open Admin Dashboard →</button></div>
-          <div class="stats-grid" id="adminMiniGrid"></div>
+        <div id="adminSection" class="admin-only hidden">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">ADMINISTRATOR METRICS</p>
+              <h3>System Overview</h3>
+              <p>Real-time database counts from MySQL.</p>
+            </div>
+            <button id="adminRefresh" class="ghost">Refresh Stats</button>
+          </div>
+          <div class="stats-grid" id="adminGrid"></div>
         </div>
         <div class="two-col">
           <div class="panel"><div class="section-head"><div><h3>Recent lost reports</h3><p>Latest records from MySQL</p></div></div><div id="dashboardLost" class="item-list"></div></div>
@@ -95,8 +104,31 @@
       </section>
 
       <section id="page-found" class="page">
-        <div class="section-head"><div><p class="eyebrow">FOUND ITEMS</p><h3>Security desk inventory</h3></div><button id="foundRefresh" class="ghost">Refresh</button></div>
-        <div class="filter-bar"><select id="foundCategoryFilter"><option value="">All categories</option></select><input id="foundLocationFilter" placeholder="Location"><input id="foundKeywordFilter" placeholder="Keyword"><select id="foundStatusFilter"><option value="">All Statuses</option><option value="RETURNED">RETURNED</option><option value="MATCHED">MATCHED</option><option value="UNAVAILABLE">UNAVAILABLE</option></select><button id="foundFilterBtn" class="primary">Search</button></div>
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">FOUND ITEMS</p>
+            <h3>Security desk & found inventory</h3>
+            <p class="hint">Items found on campus. You can view available items, finder contact numbers, and search by keyword or category.</p>
+          </div>
+          <div class="action-row">
+            <button class="primary" data-page-jump="report-found">+ Report Found Item</button>
+            <button id="foundRefresh" class="ghost">Refresh</button>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <select id="foundCategoryFilter"><option value="">All categories</option></select>
+          <input id="foundLocationFilter" placeholder="Location">
+          <input id="foundKeywordFilter" placeholder="Keyword">
+          <select id="foundStatusFilter">
+            <option value="">All Statuses</option>
+            <option value="AVAILABLE">AVAILABLE</option>
+            <option value="CLAIMED">CLAIMED</option>
+            <option value="MATCHED">MATCHED</option>
+            <option value="RETURNED">RETURNED</option>
+            <option value="UNAVAILABLE">UNAVAILABLE</option>
+          </select>
+          <button id="foundFilterBtn" class="primary">Search</button>
+        </div>
         <div class="panel"><div id="foundTableWrap" class="table-wrap"></div></div>
       </section>
 
@@ -105,8 +137,8 @@
         <div class="panel"><div id="matchTableWrap" class="table-wrap"></div></div>
       </section>
 
-      <section id="page-report-found" class="page staff-page">
-        <div class="section-head"><div><p class="eyebrow">STAFF WORKFLOW</p><h3>Report a found item</h3><p>Only Staff/Admin accounts can create found-item records.</p></div></div>
+      <section id="page-report-found" class="page">
+        <div class="section-head"><div><p class="eyebrow">FOUND ITEM ENTRY</p><h3>Report a found item</h3><p>Log a found item with location, date, and finder mobile number.</p></div></div>
         <div class="panel form-panel">
           <form id="foundForm" class="form-grid">
             <label>Category<select id="foundCategory" required></select></label>
@@ -134,10 +166,6 @@
         </div>
       </section>
 
-      <section id="page-admin" class="page admin-page">
-        <div class="section-head"><div><p class="eyebrow">ADMIN</p><h3>System dashboard</h3><p>Counts below are read from MySQL.</p></div><button id="adminRefresh" class="ghost">Refresh</button></div>
-        <div class="stats-grid" id="adminGrid"></div>
-      </section>
 
       <section id="page-categories" class="page admin-page">
         <div class="section-head"><div><p class="eyebrow">ADMIN</p><h3>Category management</h3></div></div>

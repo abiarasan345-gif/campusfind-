@@ -65,7 +65,19 @@ class FoundItemServiceTest {
         BadRequestException ex = assertThrows(BadRequestException.class,
                 () -> service.updateStatus(20L, "RETURNED", session));
 
-        assertEquals("An AVAILABLE item can only move to MATCHED or UNAVAILABLE", ex.getMessage());
+        assertEquals("A found item cannot be marked 'returned' unless it is first marked 'claimed'", ex.getMessage());
+    }
+
+    @Test
+    void allowsClaimedThenReturn() {
+        when(authService.requireUser(session)).thenReturn(staff);
+        when(repository.findById(20L)).thenReturn(java.util.Optional.of(item));
+        when(repository.save(any(FoundItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        item.setStatus(FoundStatus.CLAIMED);
+        assertEquals("RETURNED", service.updateStatus(20L, "RETURNED", session).status());
+        assertEquals(FoundStatus.RETURNED, item.getStatus());
+        verify(repository).save(item);
     }
 
     @Test

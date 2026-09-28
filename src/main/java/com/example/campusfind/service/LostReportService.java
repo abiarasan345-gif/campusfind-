@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.campusfind.dto.LostReportRequest;
 import com.example.campusfind.dto.LostReportResponse;
+import com.example.campusfind.entity.CaseState;
 import com.example.campusfind.entity.Category;
 import com.example.campusfind.entity.LostReport;
 import com.example.campusfind.entity.LostStatus;
@@ -70,13 +71,25 @@ public class LostReportService {
     }
 
     @Transactional
+    public LostReportResponse updateStatus(Long id, String requestedStatus, HttpSession session) {
+        User actor = authService.requireUser(session);
+        LostReport report = getEntity(id);
+        requireOwnerOrAdmin(actor, report.getReportingUser());
+        LostStatus next = parseStatus(requestedStatus);
+        report.setStatus(next);
+        if (next == LostStatus.RETURNED) {
+            report.setCaseState(CaseState.CLOSED);
+        } else if (next == LostStatus.OPEN) {
+            report.setCaseState(CaseState.PENDING);
+        }
+        return toResponse(lostReportRepository.save(report));
+    }
+
+    @Transactional
     public void delete(Long id, HttpSession session) {
         User actor = authService.requireUser(session);
         LostReport report = getEntity(id);
         requireOwnerOrAdmin(actor, report.getReportingUser());
-        if (report.getStatus() != LostStatus.OPEN) {
-            throw new BadRequestException("Only OPEN lost reports can be deleted");
-        }
         lostReportRepository.delete(report);
     }
 
